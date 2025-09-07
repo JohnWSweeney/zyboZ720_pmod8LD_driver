@@ -1,1 +1,3 @@
-# zyboZ720_pmod8LD_driver
+# 8LD Pmod Driver
+
+PL module implements enable (EN) and PWM for PS control.
