@@ -17,40 +17,44 @@ int main(void){
 	XGpioPs_SetOutputEnablePin(&gpioPS, mioLED, 1);
 	XGpioPs_WritePin(&gpioPS, mioLED, 0);
 
-	// initialize MIO Pmod J4 pins as outputs, set low. Pmod 8LD connected.
+	// Pmod 8LD connected to MIO J4, initialize as outputs, set low.
 	for(int i=0;i<8;i++){
 		XGpioPs_SetDirectionPin(&gpioPS, mioPmod[i], 1);
 		XGpioPs_SetOutputEnablePin(&gpioPS, mioPmod[i], 1);
 		XGpioPs_WritePin(&gpioPS, mioPmod[i], 0);
 	}
-
-	XGpio gpioRGB;
-	XGpio_Initialize(&gpioRGB, XPAR_AXI_GPIO_0_DEVICE_ID);
-	XGpio_SetDataDirection(&gpioRGB, 1, 0x0);
-	XGpio_DiscreteWrite(&gpioRGB, 1, 0x0);
+	// initialize AXI GPIO pwmCNTL.
+	// channel 1: 3 enable bits (2 downto 0), red(0), green(1), blue(2).
+	// channel 2: duty cycle (7 downto o) 0 to 100%.
+	XGpio gpioPwmCntl;
+	XGpio_Initialize(&gpioPwmCntl, XPAR_PWMCNTL_DEVICE_ID);
+	XGpio_SetDataDirection(&gpioPwmCntl, 1, 0x0);
+	XGpio_DiscreteWrite(&gpioPwmCntl, 1, 0x0);
+	XGpio_SetDataDirection(&gpioPwmCntl, 2, 0x0);
+	XGpio_DiscreteWrite(&gpioPwmCntl, 2, 0x0);
 	///
-	XGpio_SetDataDirection(&gpioRGB, 2, 0x0);
-	XGpio_DiscreteWrite(&gpioRGB, 2, 0x0);
-
-	printf("entering while loop.\n");
 	static u32 mioLEDstatus = 0;
-	static u8 mask1 = 1;
-	static u32 incr = 0;
-	static u32 blueIncr = 0;
+	static u32 timer1 = 0;
+	static u32 timer2 = 0;
+	printf("entering while loop.\n");
+	srand(666);
+
 	while(1){
-		if(incr==500){
+		if(timer1==500){
 			mioLEDstatus ^= 1;
 			XGpioPs_WritePin(&gpioPS, mioLED, mioLEDstatus);
-			incr = 0;
+			timer1 = 0;
 		}
 		//
-		if(blueIncr==65){
-			mask1 ^= 1U;
-			XGpio_DiscreteWrite(&gpioRGB, 2, mask1);
-			blueIncr = 0;
+		if(timer2==100){
+			XGpio_DiscreteWrite(&gpioPwmCntl, 1, 4);
+			u8 rando = rand() % (50 - 1 + 1) + 1;
+			XGpio_DiscreteWrite(&gpioPwmCntl, 2, rando);
+			timer2 = 0;
 		}
-		incr++;
-		blueIncr++;
+		//
+		timer1++;
+		timer2++;
 		usleep(1000); // 1ms
 	}
 }
